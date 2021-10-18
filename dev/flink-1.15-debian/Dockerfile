@@ -17,11 +17,12 @@
 ###############################################################################
 
 FROM openjdk:11-jre
+COPY --from=python:3.8-slim / /
 
 # Install dependencies
 RUN set -ex; \
   apt-get update; \
-  apt-get -y install libsnappy1v5 gettext-base libjemalloc-dev python3.8 python3.8-dev python3-pip; \
+  apt-get -y install libsnappy1v5 gettext-base libjemalloc-dev; \
   ln -s /usr/bin/python3 /usr/bin/python; \
   rm -rf /var/lib/apt/lists/*
 
@@ -76,9 +77,9 @@ RUN set -ex; \
     rm -rf "$GNUPGHOME" flink.tgz.asc; \
   fi; \
   \
-  wget -nv -0 flink-libs.whl "http://host.docker.internal:9999/data/apache_flink_libraries-1.15.dev0-py2.py3-none-any.whl"; \
-  wget -nv -0 flink.whl "http://host.docker.internal:9999/data/apache_flink-1.15.dev0-cp38-cp38-linux_x86_64.whl"; \
-  pip3 install flink-libs.whl flink.whl; \
+  wget -nv "http://host.docker.internal:9999/data/apache_flink_libraries-1.15.dev0-py2.py3-none-any.whl"; \
+  wget -nv "http://host.docker.internal:9999/data/apache_flink-1.15.dev0-cp38-cp38-linux_x86_64.whl"; \
+  pip3 install apache_flink_libraries-1.15.dev0-py2.py3-none-any.whl apache_flink-1.15.dev0-cp38-cp38-linux_x86_64.whl; \
   tar -xf flink.tgz --strip-components=1; \
   rm flink.tgz; \
   \
