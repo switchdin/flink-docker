@@ -21,7 +21,8 @@ FROM openjdk:11-jre
 # Install dependencies
 RUN set -ex; \
   apt-get update; \
-  apt-get -y install libsnappy1v5 gettext-base libjemalloc-dev; \
+  apt-get -y install libsnappy1v5 gettext-base libjemalloc-dev python3.8 python3.8-dev python3-pip; \
+  ln -s /usr/bin/python3 /usr/bin/python; \
   rm -rf /var/lib/apt/lists/*
 
 # Grab gosu for easy step-down from root
@@ -45,6 +46,8 @@ RUN set -ex; \
 
 # Configure Flink version
 ENV FLINK_TGZ_URL=http://host.docker.internal:9999/data/flink-1.15.tgz \
+    FLINK_ASC_URL= \
+    GPG_KEY= \
     CHECK_GPG=false
 
 # Prepare environment
@@ -57,6 +60,25 @@ WORKDIR $FLINK_HOME
 # Install Flink
 RUN set -ex; \
   wget -nv -O flink.tgz "$FLINK_TGZ_URL"; \
+  \
+  if [ "$CHECK_GPG" = "true" ]; then \
+    wget -nv -O flink.tgz.asc "$FLINK_ASC_URL"; \
+    export GNUPGHOME="$(mktemp -d)"; \
+    for server in ha.pool.sks-keyservers.net $(shuf -e \
+                            hkp://p80.pool.sks-keyservers.net:80 \
+                            keyserver.ubuntu.com \
+                            hkp://keyserver.ubuntu.com:80 \
+                            pgp.mit.edu) ; do \
+        gpg --batch --keyserver "$server" --recv-keys "$GPG_KEY" && break || : ; \
+    done && \
+    gpg --batch --verify flink.tgz.asc flink.tgz; \
+    gpgconf --kill all; \
+    rm -rf "$GNUPGHOME" flink.tgz.asc; \
+  fi; \
+  \
+  wget -nv -0 flink-libs.whl "http://host.docker.internal:9999/data/apache_flink_libraries-1.15.dev0-py2.py3-none-any.whl"; \
+  wget -nv -0 flink.whl "http://host.docker.internal:9999/data/apache_flink-1.15.dev0-cp38-cp38-linux_x86_64.whl"; \
+  pip3 install flink-libs.whl flink.whl; \
   tar -xf flink.tgz --strip-components=1; \
   rm flink.tgz; \
   \
