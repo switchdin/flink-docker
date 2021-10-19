@@ -8,23 +8,32 @@ export DEFAULT_JAVA="8"
 function generateDockerfile {
     # define variables
     dir=$1
-    binary_download_url=$2
+    server=$2
     asc_download_url=$3
     gpg_key=$4
     check_gpg=$5
     java_version=$6
     source_variant=$7
+    binary_download=$8
+    pyflink_whl_url=$9
+    pyflink_lib_whl_url=$10
 
     from_docker_image="openjdk:${java_version}-jre"
 
     cp docker-entrypoint.sh "$dir/docker-entrypoint.sh"
 
     # '&' has special semantics in sed replacement patterns
-    escaped_binary_download_url=$(echo "$binary_download_url" | sed 's/&/\\\&/')
+    escaped_server_url=$(echo "$server" | sed 's/&/\\\&/')
+    escaped_binary_download=$(echo "$binary_download" | sed 's/&/\\\&/')
+    escaped_pyflink_whl=$(echo "$pyflink_whl" | sed 's/&/\\\&/')
+    escaped_pyflink_lib_whl=$(echo "$pyflink_lib_whl" | sed 's/&/\\\&/')
 
     # generate Dockerfile
     sed \
-        -e "s,%%BINARY_DOWNLOAD_URL%%,${escaped_binary_download_url}," \
+        -e "s,%%SERVER_URL%%,${escaped_server_url}," \
+        -e "s,%%BINARY_DOWNLOAD%%,${escaped_binary_download}," \
+        -e "s,%%PYFLINK_WHL%%,${escaped_pyflink_whl}," \
+        -e "s,%%PYFLINK_LIB_WHL%%,${escaped_pyflink_lib_whl}," \
         -e "s,%%ASC_DOWNLOAD_URL%%,$asc_download_url," \
         -e "s/%%GPG_KEY%%/$gpg_key/" \
         -e "s/%%CHECK_GPG%%/${check_gpg}/" \

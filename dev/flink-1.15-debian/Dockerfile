@@ -46,8 +46,11 @@ RUN set -ex; \
   gosu nobody true
 
 # Configure Flink version
-ENV FLINK_TGZ_URL=http://host.docker.internal:9999/data/flink-1.15.tgz \
-    FLINK_ASC_URL= \
+ENV FLINK_TGZ_URL=%%BINARY_DOWNLOAD_URL%% \
+    SERVER=http://172.17.0.3:9999/data/ \
+    FLINK_TGZ=flink-1.15.tgz \
+    APACHE_PYFLINK_WHL=apache_flink-1.15.dev0-cp38-cp38-linux_x86_64.whl \
+    APACHE_LIB_WHL=apache_flink_libraries-1.15.dev0-py2.py3-none-any.whl \ 
     GPG_KEY= \
     CHECK_GPG=false
 
@@ -60,7 +63,7 @@ WORKDIR $FLINK_HOME
 
 # Install Flink
 RUN set -ex; \
-  wget -nv -O flink.tgz "$FLINK_TGZ_URL"; \
+  wget -nv -O flink.tgz "$SERVER$FLINK_TGZ"; \
   \
   if [ "$CHECK_GPG" = "true" ]; then \
     wget -nv -O flink.tgz.asc "$FLINK_ASC_URL"; \
@@ -77,11 +80,13 @@ RUN set -ex; \
     rm -rf "$GNUPGHOME" flink.tgz.asc; \
   fi; \
   \
-  wget -nv "http://host.docker.internal:9999/data/apache_flink_libraries-1.15.dev0-py2.py3-none-any.whl"; \
-  wget -nv "http://host.docker.internal:9999/data/apache_flink-1.15.dev0-cp38-cp38-linux_x86_64.whl"; \
-  pip3 install apache_flink_libraries-1.15.dev0-py2.py3-none-any.whl apache_flink-1.15.dev0-cp38-cp38-linux_x86_64.whl; \
+  wget -nv -O "$APACHE_PYFLINK_WHL" "$SERVER$APACHE_PYFLINK_WHL"; \
+  wget -nv -O "$APACHE_LIB_WHL" "$SERVER$APACHE_LIB_WHL"; \
+  pip3 install "$APACHE_LIB_WHL" "$APACHE_PYFLINK_WHL"; \
   tar -xf flink.tgz --strip-components=1; \
   rm flink.tgz; \
+  rm "$APACHE_LIB_WHL"; \
+  rm "$APACHE_PYFLINK_WHL"; \
   \
   chown -R flink:flink .;
 
